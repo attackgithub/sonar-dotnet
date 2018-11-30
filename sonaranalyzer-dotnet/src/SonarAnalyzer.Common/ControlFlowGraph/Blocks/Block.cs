@@ -33,25 +33,25 @@ namespace SonarAnalyzer.ControlFlowGraph
     /// </summary>
     public class Block
     {
-        private readonly Lazy<IReadOnlyList<SyntaxNode>> instructions;
-        private readonly Lazy<IReadOnlyCollection<Block>> predecessorBlocks;
+        private readonly Lazy<ImmutableArray<SyntaxNode>> instructions;
+        private readonly Lazy<ImmutableArray<Block>> predecessorBlocks;
         private readonly Lazy<ISet<Block>> allSuccessors;
         private readonly Lazy<ISet<Block>> allPredecessors;
 
         // Protected to allow extending and mocking
         protected Block()
         {
-            this.instructions = new Lazy<IReadOnlyList<SyntaxNode>>(() => ReversedInstructions.Reverse().ToImmutableArray());
-            this.predecessorBlocks = new Lazy<IReadOnlyCollection<Block>>(() => EditablePredecessorBlocks.ToImmutableHashSet());
+            this.instructions = new Lazy<ImmutableArray<SyntaxNode>>(() => ReversedInstructions.Reverse().ToImmutableArray());
+            this.predecessorBlocks = new Lazy<ImmutableArray<Block>>(() => EditablePredecessorBlocks.ToImmutableArray());
             this.allSuccessors = new Lazy<ISet<Block>>(() => GetAll(this, b => b.SuccessorBlocks));
             this.allPredecessors = new Lazy<ISet<Block>>(() => GetAll(this, b => b.PredecessorBlocks));
         }
 
-        public virtual IReadOnlyList<SyntaxNode> Instructions => this.instructions.Value;
+        public virtual ImmutableArray<SyntaxNode> Instructions => this.instructions.Value;
 
-        public virtual IReadOnlyCollection<Block> PredecessorBlocks => this.predecessorBlocks.Value;
+        public virtual ImmutableArray<Block> PredecessorBlocks => this.predecessorBlocks.Value;
 
-        public virtual IReadOnlyList<Block> SuccessorBlocks { get; } = ImmutableArray.Create<Block>();
+        public virtual ImmutableArray<Block> SuccessorBlocks { get; } = ImmutableArray.Create<Block>();
 
         internal IList<SyntaxNode> ReversedInstructions { get; } = new List<SyntaxNode>();
 
@@ -72,9 +72,9 @@ namespace SonarAnalyzer.ControlFlowGraph
 
         private static ISet<Block> GetAll(Block initial, Func<Block, IEnumerable<Block>> getNexts)
         {
-            var toProcess = new Queue<Block>();
             var alreadyProcesses = new HashSet<Block>();
-            getNexts(initial).ToList().ForEach(b => toProcess.Enqueue(b));
+
+            var toProcess = new Queue<Block>(getNexts(initial));
             while (toProcess.Count != 0)
             {
                 var current = toProcess.Dequeue();
@@ -85,10 +85,13 @@ namespace SonarAnalyzer.ControlFlowGraph
 
                 alreadyProcesses.Add(current);
 
-                getNexts(current).ToList().ForEach(b => toProcess.Enqueue(b));
+                foreach (var item in getNexts(current))
+                {
+                    toProcess.Enqueue(item);
+                }
             }
 
-            return alreadyProcesses.ToHashSet();
+            return alreadyProcesses;
         }
     }
 }

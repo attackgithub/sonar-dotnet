@@ -20,6 +20,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Linq;
 using Microsoft.CodeAnalysis;
 using SonarAnalyzer.Helpers;
@@ -128,10 +129,10 @@ namespace SonarAnalyzer.SymbolicExecution
             return programState.HasConstraint(this, ObjectConstraint.Null);
         }
 
-        protected IEnumerable<ProgramState> ThrowIfTooMany(IEnumerable<ProgramState> states)
+        protected ImmutableArray<ProgramState> ThrowIfTooMany(IEnumerable<ProgramState> states)
         {
-            var stateList = states.ToList();
-            if (stateList.Count >= AbstractExplodedGraph.MaxInternalStateCount)
+            var stateList = states.ToImmutableArray();
+            if (stateList.Length >= AbstractExplodedGraph.MaxInternalStateCount)
             {
                 throw new TooManyInternalStatesException();
             }
@@ -139,17 +140,17 @@ namespace SonarAnalyzer.SymbolicExecution
             return stateList;
         }
 
-        public virtual IEnumerable<ProgramState> TrySetConstraint(SymbolicValueConstraint constraint,
+        public virtual ImmutableArray<ProgramState> TrySetConstraint(SymbolicValueConstraint constraint,
             ProgramState programState)
         {
             if (constraint == null)
             {
-                return new[] { programState };
+                return ImmutableArray.Create(programState);
             }
 
             if (!programState.Constraints.TryGetValue(this, out var oldConstraints))
             {
-                return new[] { programState.SetConstraint(this, constraint) };
+                return ImmutableArray.Create(programState.SetConstraint(this, constraint));
             }
 
             if (constraint is BoolConstraint boolConstraint)
@@ -166,35 +167,35 @@ namespace SonarAnalyzer.SymbolicExecution
                 constraint is DisposableConstraint ||
                 constraint is CollectionCapacityConstraint)
             {
-                return new[] { programState };
+                return ImmutableArray.Create(programState);
             }
 
             throw new NotSupportedException($"Neither one of {nameof(BoolConstraint)}, {nameof(ObjectConstraint)}, " +
                 $"{nameof(ObjectConstraint)}, {nameof(DisposableConstraint)}, {nameof(CollectionCapacityConstraint)}.");
         }
 
-        public virtual IEnumerable<ProgramState> TrySetOppositeConstraint(SymbolicValueConstraint constraint,
+        public virtual ImmutableArray<ProgramState> TrySetOppositeConstraint(SymbolicValueConstraint constraint,
             ProgramState programState)
         {
             return TrySetConstraint(constraint?.OppositeForLogicalNot, programState);
         }
 
-        public IEnumerable<ProgramState> TrySetConstraints(SymbolicValueConstraints constraints,
+        public ImmutableArray<ProgramState> TrySetConstraints(SymbolicValueConstraints constraints,
             ProgramState programState)
         {
             return TrySetConstraints(constraints, programState, false);
         }
 
-        public IEnumerable<ProgramState> TrySetOppositeConstraints(SymbolicValueConstraints constraints,
+        public ImmutableArray<ProgramState> TrySetOppositeConstraints(SymbolicValueConstraints constraints,
             ProgramState programState)
         {
             return TrySetConstraints(constraints, programState, true);
         }
 
-        private IEnumerable<ProgramState> TrySetConstraints(SymbolicValueConstraints constraints,
+        private ImmutableArray<ProgramState> TrySetConstraints(SymbolicValueConstraints constraints,
             ProgramState programState, bool isOppositeConstraints)
         {
-            IEnumerable<ProgramState> programStates = new [] { programState };
+            var programStates = ImmutableArray.Create(programState);
 
             if (constraints == null)
             {
@@ -205,44 +206,45 @@ namespace SonarAnalyzer.SymbolicExecution
             {
                 programStates = programStates.SelectMany(ps =>
                     isOppositeConstraints
-                    ? TrySetOppositeConstraint(constraint, ps)
-                    : TrySetConstraint(constraint, ps));
+                        ? TrySetOppositeConstraint(constraint, ps)
+                        : TrySetConstraint(constraint, ps))
+                    .ToImmutableArray();
             }
 
             return programStates;
         }
 
-        private IEnumerable<ProgramState> TrySetBoolConstraint(BoolConstraint constraint,
+        private ImmutableArray<ProgramState> TrySetBoolConstraint(BoolConstraint constraint,
             SymbolicValueConstraints oldConstraints, ProgramState programState)
         {
             if (oldConstraints.HasConstraint(ObjectConstraint.Null))
             {
                 // It was null, and now it should be true or false
-                return Enumerable.Empty<ProgramState>();
+                return ImmutableArray<ProgramState>.Empty;
             }
 
             var oldBoolConstraint = oldConstraints.GetConstraintOrDefault<BoolConstraint>();
             if (oldBoolConstraint != null &&
                 oldBoolConstraint != constraint)
             {
-                return Enumerable.Empty<ProgramState>();
+                return ImmutableArray<ProgramState>.Empty;
             }
 
             // Either same bool constraint, or previously not null, and now a bool constraint
-            return new[] { programState.SetConstraint(this, constraint) };
+            return ImmutableArray.Create(programState.SetConstraint(this, constraint));
         }
 
-        private IEnumerable<ProgramState> TrySetObjectConstraint(ObjectConstraint constraint,
+        private ImmutableArray<ProgramState> TrySetObjectConstraint(ObjectConstraint constraint,
             SymbolicValueConstraints oldConstraints, ProgramState programState)
         {
             if (oldConstraints.HasConstraint<BoolConstraint>())
             {
                 if (constraint == ObjectConstraint.Null)
                 {
-                    return Enumerable.Empty<ProgramState>();
+                    return ImmutableArray<ProgramState>.Empty;
                 }
 
-                return new[] { programState };
+                return ImmutableArray.Create(programState);
             }
 
             var oldObjectConstraint = oldConstraints.GetConstraintOrDefault<ObjectConstraint>();
@@ -250,10 +252,10 @@ namespace SonarAnalyzer.SymbolicExecution
             {
                 if (oldObjectConstraint != constraint)
                 {
-                    return Enumerable.Empty<ProgramState>();
+                    return ImmutableArray<ProgramState>.Empty;
                 }
 
-                return new[] { programState.SetConstraint(this, constraint) };
+                return ImmutableArray.Create(programState.SetConstraint(this, constraint));
             }
 
             throw new NotSupportedException($"Neither {nameof(BoolConstraint)}, nor {nameof(ObjectConstraint)}");

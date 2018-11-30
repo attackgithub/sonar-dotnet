@@ -18,8 +18,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-using System.Collections.Generic;
-using System.Linq;
+using System.Collections.Immutable;
 using SonarAnalyzer.SymbolicExecution.Constraints;
 using SonarAnalyzer.SymbolicExecution.Relationships;
 
@@ -77,11 +76,11 @@ namespace SonarAnalyzer.SymbolicExecution.SymbolicValues
             return GetNormalizedRelationship(boolConstraint, LeftOperand, RightOperand);
         }
 
-        public override IEnumerable<ProgramState> TrySetConstraint(SymbolicValueConstraint constraint, ProgramState programState)
+        public override ImmutableArray<ProgramState> TrySetConstraint(SymbolicValueConstraint constraint, ProgramState programState)
         {
             if (!(constraint is BoolConstraint boolConstraint))
             {
-                return new[] { programState };
+                return ImmutableArray.Create(programState);
             }
 
             BoolConstraint oldBoolConstraint = null;
@@ -93,7 +92,7 @@ namespace SonarAnalyzer.SymbolicExecution.SymbolicValues
             if (oldBoolConstraint != null /* could also be ObjectConstraint.NotNull, which can be overridden */ &&
                 oldBoolConstraint != boolConstraint)
             {
-                return Enumerable.Empty<ProgramState>();
+                return ImmutableArray<ProgramState>.Empty;
             }
 
             var leftHasConstraint = LeftOperand.TryGetConstraints(programState, out var leftConstraints);
@@ -104,18 +103,18 @@ namespace SonarAnalyzer.SymbolicExecution.SymbolicValues
             var newProgramState = programState.TrySetRelationship(relationship);
             if (newProgramState == null)
             {
-                return Enumerable.Empty<ProgramState>();
+                return ImmutableArray<ProgramState>.Empty;
             }
 
             if (!rightHasConstraint && !leftHasConstraint)
             {
-                return new[] { newProgramState };
+                return ImmutableArray.Create(newProgramState);
             }
 
             return SetConstraint(boolConstraint, leftConstraints, rightConstraints, newProgramState);
         }
 
-        internal abstract IEnumerable<ProgramState> SetConstraint(BoolConstraint boolConstraint,
+        internal abstract ImmutableArray<ProgramState> SetConstraint(BoolConstraint boolConstraint,
             SymbolicValueConstraints leftConstraints, SymbolicValueConstraints rightConstraints,
             ProgramState programState);
     }

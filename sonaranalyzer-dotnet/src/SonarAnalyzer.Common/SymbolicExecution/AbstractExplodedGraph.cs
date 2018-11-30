@@ -105,7 +105,7 @@ namespace SonarAnalyzer.SymbolicExecution
 
                 try
                 {
-                    if (programPoint.Offset < programPoint.Block.Instructions.Count)
+                    if (programPoint.Offset < programPoint.Block.Instructions.Length)
                     {
                         VisitInstruction(node);
                         continue;

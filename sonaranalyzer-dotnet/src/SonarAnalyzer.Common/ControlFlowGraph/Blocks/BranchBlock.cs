@@ -29,7 +29,7 @@ namespace SonarAnalyzer.ControlFlowGraph
     {
         internal BranchBlock(SyntaxNode branchingNode, params Block[] successors)
         {
-            this.successors = successors ?? throw new ArgumentNullException(nameof(successors));
+            this.successors = successors;
             BranchingNode = branchingNode ?? throw new ArgumentNullException(nameof(branchingNode));
         }
 
@@ -37,7 +37,7 @@ namespace SonarAnalyzer.ControlFlowGraph
 
         protected readonly Block[] successors;
 
-        public override IReadOnlyList<Block> SuccessorBlocks => ImmutableArray.Create(this.successors);
+        public override ImmutableArray<Block> SuccessorBlocks => ImmutableArray.Create(this.successors);
 
         internal override void ReplaceSuccessors(Dictionary<Block, Block> replacementMapping)
         {

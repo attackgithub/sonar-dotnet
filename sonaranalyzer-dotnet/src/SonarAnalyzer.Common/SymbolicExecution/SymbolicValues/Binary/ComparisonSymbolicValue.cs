@@ -19,6 +19,7 @@
  */
 
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Linq;
 using SonarAnalyzer.SymbolicExecution.Constraints;
 using SonarAnalyzer.SymbolicExecution.Relationships;
@@ -35,11 +36,11 @@ namespace SonarAnalyzer.SymbolicExecution.SymbolicValues
             this.comparisonKind = comparisonKind;
         }
 
-        public override IEnumerable<ProgramState> TrySetConstraint(SymbolicValueConstraint constraint, ProgramState programState)
+        public override ImmutableArray<ProgramState> TrySetConstraint(SymbolicValueConstraint constraint, ProgramState programState)
         {
             if (!(constraint is BoolConstraint boolConstraint))
             {
-                return new[] { programState };
+                return ImmutableArray.Create(programState);
             }
 
             var relationship = GetRelationship(boolConstraint);
@@ -47,10 +48,10 @@ namespace SonarAnalyzer.SymbolicExecution.SymbolicValues
             var newProgramState = programState.TrySetRelationship(relationship);
             if (newProgramState == null)
             {
-                return Enumerable.Empty<ProgramState>();
+                return ImmutableArray<ProgramState>.Empty;
             }
 
-            return new[] { newProgramState };
+            return ImmutableArray.Create(newProgramState);
         }
 
         private BinaryRelationship GetRelationship(BoolConstraint boolConstraint)

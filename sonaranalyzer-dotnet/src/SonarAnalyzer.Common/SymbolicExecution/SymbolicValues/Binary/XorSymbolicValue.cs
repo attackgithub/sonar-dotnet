@@ -18,7 +18,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Linq;
 using SonarAnalyzer.SymbolicExecution.Constraints;
 
@@ -31,11 +31,11 @@ namespace SonarAnalyzer.SymbolicExecution.SymbolicValues
         {
         }
 
-        public override IEnumerable<ProgramState> TrySetConstraint(SymbolicValueConstraint constraint, ProgramState programState)
+        public override ImmutableArray<ProgramState> TrySetConstraint(SymbolicValueConstraint constraint, ProgramState programState)
         {
             if (!(constraint is BoolConstraint boolConstraint))
             {
-                return new[] { programState };
+                return ImmutableArray.Create(programState);
             }
 
             if (constraint == BoolConstraint.False)

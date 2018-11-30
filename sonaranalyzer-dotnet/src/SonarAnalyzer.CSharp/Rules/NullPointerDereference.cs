@@ -219,7 +219,7 @@ namespace SonarAnalyzer.Rules.CSharp
             private ProgramState ProcessIdentifier(ProgramPoint programPoint, ProgramState programState, IdentifierNameSyntax identifier)
             {
                 if (programPoint.Block.Instructions.Last() != identifier ||
-                    programPoint.Block.SuccessorBlocks.Count != 1 ||
+                    programPoint.Block.SuccessorBlocks.Length != 1 ||
                     (!IsSuccessorForeachBranch(programPoint) && !IsExceptionThrow(identifier)))
                 {
                     return programState;

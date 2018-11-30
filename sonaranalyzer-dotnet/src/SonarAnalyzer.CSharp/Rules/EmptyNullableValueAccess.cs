@@ -160,11 +160,11 @@ namespace SonarAnalyzer.Rules.CSharp
             {
             }
 
-            public override IEnumerable<ProgramState> TrySetConstraint(SymbolicValueConstraint constraint, ProgramState programState)
+            public override ImmutableArray<ProgramState> TrySetConstraint(SymbolicValueConstraint constraint, ProgramState programState)
             {
                 if (!(constraint is BoolConstraint boolConstraint))
                 {
-                    return new[] { programState };
+                    return ImmutableArray.Create(programState);
                 }
 
                 var nullabilityConstraint = boolConstraint == BoolConstraint.True

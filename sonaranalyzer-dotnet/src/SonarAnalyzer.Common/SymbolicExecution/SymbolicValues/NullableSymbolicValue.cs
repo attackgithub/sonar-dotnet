@@ -34,12 +34,12 @@ namespace SonarAnalyzer.SymbolicExecution.SymbolicValues
             WrappedValue = wrappedValue;
         }
 
-        public override IEnumerable<ProgramState> TrySetConstraint(SymbolicValueConstraint constraint,
+        public override ImmutableArray<ProgramState> TrySetConstraint(SymbolicValueConstraint constraint,
             ProgramState programState)
         {
             if (constraint == null)
             {
-                return new[] { programState };
+                return ImmutableArray.Create(programState);
             }
 
             if (constraint is ObjectConstraint)
@@ -57,29 +57,31 @@ namespace SonarAnalyzer.SymbolicExecution.SymbolicValues
             {
                 if (oldConstraint == null)
                 {
-                    return new[] { programState.SetConstraint(this, constraint) };
+                    return ImmutableArray.Create(programState.SetConstraint(this, constraint));
                 }
 
                 if (oldConstraint != constraint)
                 {
-                    return Enumerable.Empty<ProgramState>();
+                    return ImmutableArray<ProgramState>.Empty;
                 }
 
-                return new[] { programState };
+                return ImmutableArray.Create(programState);
             }
 
             return TrySetConstraint(NullableValueConstraint.HasValue, programState)
-                .SelectMany(ps => WrappedValue.TrySetConstraint(constraint, ps));
+                .SelectMany(ps => WrappedValue.TrySetConstraint(constraint, ps))
+                .ToImmutableArray();
         }
 
-        public override IEnumerable<ProgramState> TrySetOppositeConstraint(SymbolicValueConstraint constraint, ProgramState programState)
+        public override ImmutableArray<ProgramState> TrySetOppositeConstraint(SymbolicValueConstraint constraint, ProgramState programState)
         {
             var negateConstraint = constraint?.OppositeForLogicalNot;
 
             if (constraint is BoolConstraint)
             {
                 return TrySetConstraint(negateConstraint, programState)
-                  .Union(TrySetConstraint(NullableValueConstraint.NoValue, programState));
+                  .Union(TrySetConstraint(NullableValueConstraint.NoValue, programState))
+                  .ToImmutableArray();
             }
 
             return TrySetConstraint(negateConstraint, programState);
